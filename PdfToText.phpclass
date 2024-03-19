@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**************************************************************************************************************
 
     NAME
@@ -1489,6 +1489,12 @@ class  PdfToText 	extends PdfObjectBase
 	private static		$HasMemoryGetPeakUsage ;
 
 
+
+	public string $PdfVersion = "";
+	public array $FomDataDefinitions;
+	public array $FormDataObjects;
+
+
 	/*--------------------------------------------------------------------------------------------------------------
 
 	    CONSTRUCTOR
@@ -1551,6 +1557,7 @@ class  PdfToText 	extends PdfObjectBase
 			// Build the character classes (used only for testing letters and digits)
 			if  ( self::$CharacterClasses  ===  false )
 			   {
+				self::$CharacterClasses = [];
 				for  ( $ord = 0 ; $ord  <  256 ; $ord ++ )
 				   {
 					$ch	=  chr ( $ord ) ;
@@ -2153,7 +2160,16 @@ class  PdfToText 	extends PdfObjectBase
 
 		// Build the page locations (ie, starting and ending offsets)
 		$offset			=  0 ;
-		$page_separator		=  utf8_encode ( $this -> PageSeparator ) ;
+		$page_separator = $this->PageSeparator;
+		$page_separator_encoding = mb_detect_encoding($page_separator);
+		if  ( $page_separator_encoding !== "UTF-8" )
+		   {
+			$page_separator = mb_convert_encoding($page_separator, "UTF-8", $page_separator_encoding);
+			if  ( $page_separator === false )
+			   {
+				error ( new PdfToTextException ( "Could Not convert PageSeparator to UTF-8 from " . $page_separator_encoding ) ) ;
+			   }
+		    }
 		$page_separator_length	=  strlen ( $page_separator ) ;
 
 		foreach  ( $this -> Pages  as  $page_number => &$page )
@@ -7262,10 +7278,10 @@ abstract class	PdfTexterCharacterMap	extends		PdfObjectBase
 	        Interface implementations.
 
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  offsetSet ( $offset, $value )
+	public function  offsetSet ( mixed $offset, mixed $value ): void
 	   { error ( new PdfToTextDecodingException ( "Unsupported operation." ) ) ; }
 
-	public function  offsetUnset ( $offset )
+	public function  offsetUnset ( mixed $offset ): void
 	   { error ( new PdfToTextDecodingException ( "Unsupported operation." ) ) ; }
     }
 
@@ -7499,11 +7515,11 @@ class  PdfTexterUnicodeMap 	extends 	PdfTexterCharacterMap
 	        Interface implementations.
 
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  count ( )
+	public function count(): int
 	   { return ( count ( $this -> DirectMap ) ) ; }
 
 
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { return  ( $this -> offsetGetSafe ( $offset )  !==  false ) ; }
 
 
@@ -7554,7 +7570,7 @@ class  PdfTexterUnicodeMap 	extends 	PdfTexterCharacterMap
 	    }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   {
 		$code	=  $this -> offsetGetSafe ( $offset ) ;
 
@@ -7746,11 +7762,11 @@ class  PdfTexterEncodingMap 	extends  PdfTexterCharacterMap
 	        Interface implementations.
 
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  count ( )
+	public function count(): int
 	   { return ( count ( $this -> Map ) ) ; }
 
 
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { 
 		return ( ( ! $this -> Secondary ) ?  
 				isset ( $this -> Map [ $offset ] ) :
@@ -7758,7 +7774,7 @@ class  PdfTexterEncodingMap 	extends  PdfTexterCharacterMap
 	    }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   {
 		if  ( ! $this -> Secondary )
 		   {
@@ -7839,15 +7855,15 @@ abstract class  PdfTexterAdobeMap	extends  PdfTexterCharacterMap
 	        Interface implementations.
 
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  count ( )
+	public function count(): int
 	   { return ( count ( $this -> Map [ $this -> Variant ] ) ) ; }
 
 
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { return ( isset ( $this -> Map [ $this-> Variant ] [ $offset ] ) ) ; }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   {
 		if  ( isset ( $this -> Map [ $this-> Variant ] [ $offset ] ) )
 			$ord		=  $this -> Map [ $this -> Variant ] [ $offset ] ;
@@ -8415,15 +8431,15 @@ abstract class	PdfTexterCIDMap		extends  PdfTexterCharacterMap
 	        Interface implementations.
 
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  count ( )
+	public function count(): int
 	   { return ( count ( $this -> Map ) ) ; }
 
 
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { return ( isset ( $this -> Map [ 'plain' ] [ $offset ] ) ) ; }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   {
 		if  ( isset ( $this -> Map [ 'plain' ] [ $offset ] ) )
 		   {
@@ -10456,27 +10472,27 @@ class  PdftoTextFormDefinitions		// extends		Object
 		Interfaces implementations to retrieve form definitions.
 
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  count ( )
+	public function count(): int
 	   { return ( count ( $this -> Definitions ) ) ; }
 
 
-	public function  getIterator ( )
+	public function  getIterator ( ): Traversable
 	   { return ( new ArrayIterator ( $this -> Definitions ) ) ; }
 
 
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { return ( $offset  >=  0  &&  $offset  <  count ( $this -> Definitions ) ) ; }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   { return ( $this -> Definitions [ $offset ] ) ; }
 
 
-	public function  offsetSet ( $offset, $value ) 
+	public function  offsetSet ( mixed $offset, mixed $value ): void
 	   { error ( new PdfToTextException ( "Unsupported operation." ) ) ; }
 
 
-	public function  offsetunset ( $offset ) 
+	public function  offsetunset ( mixed $offset ): void
 	   { error ( new PdfToTextException ( "Unsupported operation." ) ) ; }
     }	
 
@@ -11498,24 +11514,24 @@ class  PdfToTextCaptureDefinitions	// extends		Object
 	 *-------------------------------------------------------------------------------------------------------------*/
 
 	// Countable interface
-	public function  count ( )
+	public function count(): int
 	   { return ( count ( $this -> ShapeDefinitions ) ) ; }
 
 
 	// ArrayAccess interface
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { return ( isset ( $this -> ShapeDefinitions [ $offset ] ) ) ; }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   { return ( $this -> ShapeDefinitions [ $offset ] ) ; }
 
 
-	public function  offsetSet ( $offset, $value )
+	public function  offsetSet ( mixed $offset, mixed $value ): void
 	   { error ( new PdfToTextException ( "Unsupported operation" ) ) ; }
 
 
-	public function  offsetunset ( $offset )
+	public function  offsetUnset ( mixed $offset ): void
 	   { error ( new PdfToTextException ( "Unsupported operation" ) ) ; }
 
 
@@ -11523,19 +11539,19 @@ class  PdfToTextCaptureDefinitions	// extends		Object
 	//	Iteration is made through shape names, which are supplied by the $ShapeNames property
 	private		$__iterator_index	=  0 ;
 
-	public function  rewind ( )
+	public function  rewind ( ): void
 	   { $this -> __iterator_index = 0 ; }
 
-	public function  valid ( )
+	public function  valid ( ): bool
 	   { return ( $this -> __iterator_index  >=  0  &&  $this -> __iterator_index  <  count ( $this -> ShapeNames ) ) ; }
 
-	public function  key ( )
+	public function  key ( ): mixed
 	   { return ( $this -> ShapeNames [ $this -> __iterator_index ] ) ; }
 
-	public function  next ( )
+	public function  next ( ): void
 	   { $this -> __iterator_index ++ ; }
 
-	public function  current ( )
+	public function  current ( ): mixed
 	   { return ( $this -> ShapeDefinitions [ $this -> ShapeNames [ $this -> __iterator_index ] ] ) ; }
     }
 
@@ -12252,47 +12268,47 @@ class  PdfToTextCaptureApplicablePages		//extends		Object
 	 *-------------------------------------------------------------------------------------------------------------*/
 
 	// Countable interface
-	public function  count ( )
+	public function count(): int
 	   { return ( count ( $this -> PageMap ) ) ; }
 
 
 	// Array access interface
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { return ( isset ( $this -> PageMap [ $offset ] ) ) ; }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   { return ( ( isset ( $this -> PageMap [ $offset ] ) ) ?  true : false ) ; }
 
 
-	public function  offsetSet ( $offset, $value )
+	public function  offsetSet ( mixed $offset, mixed $value ): void
 	   { error ( new PdfToTextException ( "Unsupported operation" ) ) ; }
 
 
-	public function  offsetunset ( $offset )
+	public function  offsetUnset ( mixed $offset ): void
 	   { error ( new PdfToTextException ( "Unsupported operation" ) ) ; }
 
 
 	// Iterator interface
 	private		$__iterator_value	=  1 ;
 
-	public function   rewind ( ) 
+	public function   rewind ( ): void
 	   { $this -> __iterator_value = 1 ; }
 
 	
-	public function  valid ( )
+	public function  valid ( ): bool
 	   { return ( $this -> __iterator_value  >=  1  &&  $this -> __iterator_value  <=  $this -> PageCount ) ; }
 
 	
-	public function  key ( )
+	public function  key ( ): mixed
 	   { return ( $this -> __iterator_value ) ; }
 
 
-	public function  next ( )
+	public function  next ( ): void
 	   { $this -> __iterator_value ++ ; }
 
 
-	public function  current ( )
+	public function  current ( ): mixed
 	   { return ( ( isset ( $this -> PageMap [ $this -> __iterator_value ] ) ) ?  true : false ) ; }
 
 
@@ -12739,15 +12755,15 @@ class  PdfToTextCapturedLine			extends		PdfToTextCapturedText
 		Interfaces implementations.
 	
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  count ( )
+	public function  count ( ): int
 	   { return ( $this -> Columns ) ; }
 
 
-	public function  getIterator ( )
+	public function  getIterator ( ): Traversable
 	   { return ( new ArrayIterator ( $this -> Columns ) ) ; }
 
 
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { 
 		if  ( is_numeric ( $offset ) )
 			return ( $offset  >=  0  &&  $offset  <  count ( $this -> Columns ) ) ; 
@@ -12756,7 +12772,7 @@ class  PdfToTextCapturedLine			extends		PdfToTextCapturedText
 	    }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   {
 		if  ( is_numeric ( $offset ) )
 			return ( $this -> Columns [ $offset ] ) ; 
@@ -12765,11 +12781,11 @@ class  PdfToTextCapturedLine			extends		PdfToTextCapturedText
 	    }
 
 
-	public function  offsetSet ( $offset, $value )
+	public function  offsetSet ( mixed $offset, mixed $value ): void
 	   { error ( new PdfToTextCaptureException ( "Unsupported operation." ) ) ; }
 
 
-	public function  offsetUnset ( $offset )
+	public function  offsetUnset ( mixed $offset ): void
 	   { error ( new PdfToTextCaptureException ( "Unsupported operation." ) ) ; }
     }
 
@@ -12812,27 +12828,27 @@ class  PdfToTextCapturedLines			//extends		Object
 		Interfaces implementations.
 	
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  count ( )
+	public function  count ( ): int
 	   { return ( $this -> Lines ) ; }
 
 
-	public function  getIterator ( )
+	public function  getIterator ( ): Traversable
 	   { return ( new ArrayIterator ( $this -> Lines ) ) ; }
 
 
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { return ( $offset  >=  0  &&  $offset  <  count ( $this -> Lines ) ) ; }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   { return ( $this -> Captures [ $offset ] ) ; }
 
 
-	public function  offsetSet ( $offset, $value )
+	public function  offsetSet ( mixed $offset, mixed $value ): void
 	   { error ( new PdfToTextCaptureException ( "Unsupported operation." ) ) ; }
 
 
-	public function  offsetUnset ( $offset )
+	public function  offsetUnset ( mixed $offset ): void
 	   { error ( new PdfToTextCaptureException ( "Unsupported operation." ) ) ; }
     }
 
@@ -13020,27 +13036,26 @@ class  PdfToTextCapture				//extends		Object
 		Interfaces implementations.
 	
 	 *-------------------------------------------------------------------------------------------------------------*/
-	public function  count ( )
+	public function  count ( ): int
 	   { return ( $this -> Captures ) ; }
 
-
-	public function  getIterator ( )
+	public function  getIterator ( ): Traversable
 	   { return ( new ArrayIterator ( $this -> Captures ) ) ; }
 
 
-	public function  offsetExists ( $offset )
+	public function  offsetExists ( mixed $offset ): bool
 	   { return ( $offset  >=  0  &&  $offset  <  count ( $this -> Captures ) ) ; }
 
 
-	public function  offsetGet ( $offset )
+	public function  offsetGet ( mixed $offset ): mixed
 	   { return ( $this -> Captures [ $offset ] ) ; }
 
 
-	public function  offsetSet ( $offset, $value )
+	public function  offsetSet ( mixed $offset, mixed $value ): void
 	   { error ( new PdfToTextCaptureException ( "Unsupported operation." ) ) ; }
 
 
-	public function  offsetUnset ( $offset )
+	public function  offsetUnset ( $offset ): void
 	   { error ( new PdfToTextCaptureException ( "Unsupported operation." ) ) ; }
 
     }
